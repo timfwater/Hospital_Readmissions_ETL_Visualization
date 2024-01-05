@@ -3,7 +3,7 @@ Data science work in healthcare and other domains
 
 Diabetes Predictions (6 files):
 
-Script_1_geni_info_json_to_csv.py: Converts source General Information file from JSON to CSV format
+Script_1_gen_info_json_to_csv.py: Converts source General Information file from JSON to CSV format
 
 Script_2_merged_recreated_hosp.py: Converts source Readmissions Information file from Parquet to CSV format
 
