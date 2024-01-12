@@ -1,3 +1,4 @@
+# Importing libraries
 import sys
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
@@ -5,6 +6,7 @@ from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
 
+# Defining variables
 args = getResolvedOptions(sys.argv, ["JOB_NAME"])
 sc = SparkContext()
 glueContext = GlueContext(sc)
@@ -12,14 +14,14 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 
-# Script generated for node AWS Glue Data Catalog
+# Referencing AWS Glue Data Catalog
 AWSGlueDataCatalog_node1704041557520 = glueContext.create_dynamic_frame.from_catalog(
     database="hosp",
     table_name="readm_parqreadmission_parquet",
     transformation_ctx="AWSGlueDataCatalog_node1704041557520",
 )
 
-# Script generated for node Change Schema
+# Defining node Change Schema
 ChangeSchema_node1704041562743 = ApplyMapping.apply(
     frame=AWSGlueDataCatalog_node1704041557520,
     mappings=[
@@ -59,7 +61,7 @@ repartitioned_frame = Repartition.apply(frame=ChangeSchema_node1704041562743, nu
 
 output_filename = "reformatted_readmission_information.csv"
 
-# Script generated for node Amazon S3
+# Exporting transformed file to S3 in CSV
 AmazonS3_node1704041564805 = glueContext.write_dynamic_frame.from_options(
     frame=repartitioned_frame,
     connection_type="s3",
