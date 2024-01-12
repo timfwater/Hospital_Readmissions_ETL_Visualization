@@ -1,3 +1,4 @@
+# Importing libraries
 import sys
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
@@ -6,34 +7,29 @@ from awsglue.context import GlueContext
 from awsglue.job import Job
 from awsglue.dynamicframe import DynamicFrame
 
-# Get Glue job arguments
+# Defining variables
 args = getResolvedOptions(sys.argv, ["JOB_NAME"])
-
-# Initialize Spark and Glue contexts
 sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
-
-# Initialize Glue job
 job = Job(glueContext)
 job.init(args["JOB_NAME"], args)
 
-# Script generated for node AWS Glue Data Catalog
+# Referencing AWS Glue Data Catalog for Hospital data
 AWSGlueDataCatalog_node1704043413523 = glueContext.create_dynamic_frame.from_catalog(
     database="hosp",
     table_name="reformated_gengen_info_recreated_csv_from_json",
     transformation_ctx="AWSGlueDataCatalog_node1704043413523",
 )
 
-# Script generated for node AWS Glue Data Catalog
+# Referencing AWS Glue Data Catalog for Readmissions data
 AWSGlueDataCatalog_node1704043414951 = glueContext.create_dynamic_frame.from_catalog(
     database="hosp",
     table_name="readm_recreatereadmission_recreated_csv_from_parquet",
     transformation_ctx="AWSGlueDataCatalog_node1704043414951",
 )
 
-# Script generated for General Information dataset
-# Multiple fields are left out here, as we only need to include a few Hospital categories in our merged dataset
+# Defining our Hospital input columns
 ChangeSchemagen_node1704043486632 = ApplyMapping.apply(
     frame=AWSGlueDataCatalog_node1704043413523,
     mappings=[
@@ -44,7 +40,7 @@ ChangeSchemagen_node1704043486632 = ApplyMapping.apply(
     transformation_ctx="ChangeSchemagen_node1704043486632",
 )
 
-# Script generated for Readmissions dataset
+# Defining our Readmissions input columns
 ChangeSchemareadm_node1704043418499 = ApplyMapping.apply(
     frame=AWSGlueDataCatalog_node1704043414951,
     mappings=[
@@ -60,11 +56,11 @@ ChangeSchemareadm_node1704043418499 = ApplyMapping.apply(
     transformation_ctx="ChangeSchemareadm_node1704043418499",
 )
 
-# Script generated for node Join
+# Defining node Join
 ChangeSchemareadm_node1704043418499DF = ChangeSchemareadm_node1704043418499.toDF()
 ChangeSchemagen_node1704043486632DF = ChangeSchemagen_node1704043486632.toDF()
 
-# Retain only the "provider_id_r" from the "ChangeSchemareadm_node1704043418499DF" (Readmissions) dataset
+# Join on provider ID
 Join_node1704043499047 = DynamicFrame.fromDF(
     ChangeSchemareadm_node1704043418499DF.join(
         ChangeSchemagen_node1704043486632DF,
@@ -107,10 +103,7 @@ column_order = [
 # Select columns in the desired order
 Join_node1704043499047 = Join_node1704043499047.select_fields(column_order)
 
-
 # Convert "Not Available" to None before using Filter
-#From prior exploration it was seen that many columns have a "Not Available" rating. We will turn these to Null,
-#so that they may all be removed through one additional step.
 Join_node1704043499047 = Join_node1704043499047.map(
     transformation_ctx="Replace_Not_Available",
     f=lambda x: dict((k, None) if v == "Not Available" else (k, v) for k, v in x.items())
@@ -129,7 +122,7 @@ Join_node1704043499047 = DynamicFrame.fromDF(
     "Join_node1704043499047"
 )
 
-# Value replacement for the Readmission Type column, to improve comprehension and reduce space taken in BI tool visuals
+# Value replacement for Readmission Type column
 measure_value_mapping = {
     "READM_30_PN_HRRP": "Pneumonia",
     "READM_30_AMI_HRRP": "AMI",
@@ -146,8 +139,7 @@ for old_value, new_value in measure_value_mapping.items():
         f=lambda x: x if x["Readm Type"] != old_value else dict(x, **{"Readm Type": new_value})
     )
 
-# Value replacement for the Hospital Ownership column, to improve comprehension and reduce space taken in BI tool visuals
-hosp_own_value_mapping = {
+# Value replacement for the Hospital Ownership column
     "Voluntary non-profit - Private": "Pvt NP",
     "Proprietary": "Prop",
     "Voluntary non-profit - Other": "Other", 
@@ -167,8 +159,7 @@ for old_value, new_value in hosp_own_value_mapping.items():
         f=lambda x: x if x["Hosp Ownership"] != old_value else dict(x, **{"Hosp Ownership": new_value})
     )
 
-# Value replacement for the Hospital Ownership column, to improve comprehension and convert to categorical from numeric
-
+# Value replacement for the Hospital Ownership column
 hosp_rating_value_mapping = {
     1: "1 Star",
     2: "2 Star",
@@ -177,6 +168,7 @@ hosp_rating_value_mapping = {
     5: "5 Star"
 }
 
+# Replace values in DynamicFrame
 for old_value, new_value in hosp_rating_value_mapping.items():
     Join_node1704043499047 = Join_node1704043499047.map(
         transformation_ctx="ReplaceValues_" + str(old_value),
@@ -184,7 +176,7 @@ for old_value, new_value in hosp_rating_value_mapping.items():
         if x["Hosp Rating"] == str(old_value) else x
     )
 
-#Creating our new custom KPI -- the difference between the Predicted, and the Expected Admission rate.
+#Creating our new custom KPI
 Join_node1704043499047 = Join_node1704043499047.map(
     transformation_ctx="Calculate_Difference",
     f=lambda x: dict(x, **{"R Rate Diff": float(x["Pred Readm Rate"]) - float(x["Exp Readm Rate"])})
