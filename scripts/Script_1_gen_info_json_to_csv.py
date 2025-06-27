@@ -40,12 +40,15 @@ schema = StructType([
 ])
 
 # Read JSON from S3 (or local path)
-df = spark.read.json("s3://glue-hospital-data/gen_info_json/", schema=schema)
+df = spark.read.json("General_Information_JSON.snappy", schema=schema)
+
+#df = spark.read.json("s3://glue-hospital-data/gen_info_json/", schema=schema)
 
 # Optionally repartition to 1 file
 df = df.repartition(1)
 
 # Write as CSV to S3
-df.write.mode("overwrite").option("header", True).csv("s3://glue-hospital-data/gen_info_recreated_csv_from_json/")
+df.write.mode("overwrite").option("header", True).csv("/app/output/gen_info_csv")
+#df.write.mode("overwrite").option("header", True).csv("s3://glue-hospital-data/gen_info_recreated_csv_from_json/")
 
 spark.stop()
