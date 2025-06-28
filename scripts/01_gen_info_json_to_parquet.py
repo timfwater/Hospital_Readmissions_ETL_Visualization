@@ -1,15 +1,19 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, LongType, BooleanType
+import sys
 
-# Initialize Spark session (no fancy commit protocol config)
+# ✅ Initialize Spark session with S3 support and correct timeout config
 spark = SparkSession.builder \
-    .appName("YourAppName") \
+    .appName("GeneralInfoJSONtoParquet") \
     .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
     .config("spark.hadoop.fs.s3a.aws.credentials.provider", "com.amazonaws.auth.DefaultAWSCredentialsProviderChain") \
-    .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:3.3.2,com.amazonaws:aws-java-sdk-bundle:1.12.375") \
+    .config("spark.jars", "jars/hadoop-aws-3.3.2.jar,jars/aws-java-sdk-bundle-1.12.375.jar") \
+    .config("spark.hadoop.fs.s3a.connection.timeout", "60000") \
+    .config("spark.hadoop.fs.s3a.connection.establish.timeout", "60000") \
+    .config("spark.hadoop.fs.s3a.connection.maximum", "100") \
     .getOrCreate()
 
-# Define schema
+# ✅ Schema for the JSON structure
 schema = StructType([
     StructField("provider id", IntegerType(), True),
     StructField("hospital name", StringType(), True),
@@ -42,10 +46,23 @@ schema = StructType([
     StructField("location", StringType(), True)
 ])
 
-# ✅ Read JSON from S3
-df = spark.read.json("s3a://glue-hospital-data/gen_info_json/", schema=schema)
+# ✅ S3 paths
+input_path = "s3a://glue-hospital-data/gen_info_json/"
+output_path = "s3a://glue-hospital-data/athena/gen_info/"
 
-# ✅ Write CSV to S3
-df.repartition(1).write.mode("overwrite").option("header", True).csv("s3a://glue-hospital-data/gen_info_recreated_csv_from_json/")
+# ✅ Load JSON
+df = spark.read.json(input_path, schema=schema)
+
+# ✅ Validate
+count = df.count()
+if count == 0:
+    print(f"❌ No records found at: {input_path}")
+    sys.exit(1)
+else:
+    print(f"✅ Loaded {count} records from: {input_path}")
+
+# ✅ Write as Parquet
+df.repartition(1).write.mode("overwrite").parquet(output_path)
+print(f"✅ Parquet written to: {output_path}")
 
 spark.stop()
