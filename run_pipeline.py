@@ -8,7 +8,7 @@ scripts = [
 
 for script in scripts:
     print(f"🔧 Running {script}...")
-    result = subprocess.run(["python", script])
+    result = subprocess.run(["python3", script])
     if result.returncode != 0:
         print(f"❌ Failed on {script}")
         break
