@@ -1,35 +1,34 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 
-# Step 1: Initialize Spark session with optimized S3 commit settings
+# Step 1: Initialize Spark session with Glue Catalog integration
 spark = SparkSession.builder \
-    .appName("MergeHospitalData") \
-    .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:3.3.2,com.amazonaws:aws-java-sdk-bundle:1.12.375") \
-    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-    .config("spark.hadoop.fs.s3a.aws.credentials.provider", "com.amazonaws.auth.DefaultAWSCredentialsProviderChain") \
+    .appName("Merge Hospital Data") \
+    .config("spark.sql.catalogImplementation", "hive") \
+    .config("hive.metastore.client.factory.class", "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory") \
     .getOrCreate()
 
-# Step 2: Load hospital general info
-print("🔹 Reading hospital general info CSV...")
-df_gen = spark.read.option("header", True).csv("s3a://glue-hospital-data/gen_info_recreated_csv_from_json/")
+# Step 2: Load hospital general info from Glue Catalog
+print("🔹 Reading hospital general info from Glue Catalog...")
+df_gen = spark.read.table("hospital_readmissions.gen_info")
 df_gen = df_gen.select(
     col("provider id").cast("long").alias("provider_id"),
     col("hospital ownership").alias("Hosp Ownership"),
     col("hospital overall rating").alias("Hosp Rating")
 )
 
-# Step 3: Load readmission info
-print("🔹 Reading readmission CSV...")
-df_readm = spark.read.option("header", True).csv("s3a://glue-hospital-data/readmission_recreated_csv_from_parquet/")
+# Step 3: Load readmission info from Glue Catalog
+print("🔹 Reading readmission info from Glue Catalog...")
+df_readm = spark.read.table("hospital_readmissions.readmissions")
 df_readm = df_readm.select(
-    col("provider_id").cast("long").alias("provider_id"),
-    col("state"),
-    col("measure_name").alias("Readm Type"),
-    col("number_of_discharges").alias("Discharges"),
-    col("number_of_readmissions").alias("Readmissions"),
-    col("excess_readmission_ratio").alias("Excess Readm Ratio"),
-    col("predicted_readmission_rate").alias("Pred Readm Rate"),
-    col("expected_readmission_rate").alias("Exp Readm Rate")
+    col("Provider ID").cast("long").alias("provider_id"),
+    col("State").alias("state"),
+    col("Measure Name").alias("Readm Type"),
+    col("Number of Discharges").alias("Discharges"),
+    col("Number of Readmissions").alias("Readmissions"),
+    col("Excess Readmission Ratio").alias("Excess Readm Ratio"),
+    col("Predicted Readmission Rate").alias("Pred Readm Rate"),
+    col("Expected Readmission Rate").alias("Exp Readm Rate")
 )
 
 # Step 4: Merge and clean

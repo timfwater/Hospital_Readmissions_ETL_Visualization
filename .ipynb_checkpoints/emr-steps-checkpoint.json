@@ -1,0 +1,22 @@
+[
+  {
+    "Name": "Step 1: Convert JSON to Parquet",
+    "ActionOnFailure": "TERMINATE_CLUSTER",
+    "Type": "CUSTOM_JAR",
+    "Jar": "command-runner.jar",
+    "Args": [
+      "spark-submit",
+      "s3://glue-hospital-data/scripts/01_gen_info_json_to_parquet.py"
+    ]
+  },
+  {
+    "Name": "Step 2: Convert CSV to Parquet",
+    "ActionOnFailure": "TERMINATE_CLUSTER",
+    "Type": "CUSTOM_JAR",
+    "Jar": "command-runner.jar",
+    "Args": [
+      "spark-submit",
+      "s3://glue-hospital-data/scripts/02_readmissions_csv_to_parquet.py"
+    ]
+  }
+]
