@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Environment
+.env
+config.env
+.env.*
+
+# Logs
+*.log
+
+# AWS CLI outputs
+*.pem
+*.json
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# Mac OS
+.DS_Store
+
+# Docker
+*.tar
+docker-compose.override.yml
+
+# Final output
+fargate_deployment/final-task-def.json
+
+# Data
+*.csv
+*.parquet
+*.db
+*.sqlite
+*.zip
+
+# S3 cache downloads
+/tmp/
+.cache/
+
+# Ignore generated packages
+dist/
+build/
+
+# Ignore test files or local test outputs
+test_output/
