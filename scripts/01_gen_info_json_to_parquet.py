@@ -1,16 +1,28 @@
+# scripts/01_gen_info_json_to_parquet.py
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, LongType, BooleanType
+import os
 import sys
 
-# ✅ Initialize Spark with S3 support via JARs
-spark = SparkSession.builder \
-    .appName("GeneralInfoJSONtoParquet") \
-    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-    .config("spark.hadoop.fs.s3a.aws.credentials.provider", "com.amazonaws.auth.DefaultAWSCredentialsProviderChain") \
-    .config("spark.jars", "jars/hadoop-aws-3.3.2.jar,jars/aws-java-sdk-bundle-1.12.375.jar") \
-    .getOrCreate()
+# ---------- Config (env with safe defaults) ----------
+BUCKET = os.getenv("SCRIPT_BUCKET", "glue-hospital-data")
+INPUT_PREFIX = os.getenv("GEN_INFO_INPUT_PREFIX", "gen_info_json/")
+OUTPUT_PREFIX = os.getenv("GEN_INFO_OUTPUT_PREFIX", "athena/gen_info/")
 
-# ✅ Schema for the JSON
+input_path = f"s3a://{BUCKET}/{INPUT_PREFIX}"
+output_path = f"s3a://{BUCKET}/{OUTPUT_PREFIX}"
+
+# ---------- Spark (EMR-friendly: no local JAR paths) ----------
+spark = (
+    SparkSession.builder
+    .appName("GeneralInfoJSONtoParquet")
+    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+    .config("spark.hadoop.fs.s3a.aws.credentials.provider",
+            "com.amazonaws.auth.DefaultAWSCredentialsProviderChain")
+    .getOrCreate()
+)
+
+# ---------- Schema ----------
 schema = StructType([
     StructField("provider id", IntegerType(), True),
     StructField("hospital name", StringType(), True),
@@ -43,23 +55,17 @@ schema = StructType([
     StructField("location", StringType(), True)
 ])
 
-# ✅ Input and output paths
-input_path = "s3a://glue-hospital-data/gen_info_json/"
-output_path = "s3a://glue-hospital-data/athena/gen_info/"
-
-# ✅ Read JSON from S3
+# ---------- Read ----------
 df = spark.read.json(input_path, schema=schema)
-
-# ✅ Validation
 count = df.count()
 if count == 0:
     print(f"❌ No records found at: {input_path}")
+    spark.stop()
     sys.exit(1)
-else:
-    print(f"✅ Loaded {count} records from: {input_path}")
+print(f"✅ Loaded {count} records from: {input_path}")
 
-# ✅ Write to Parquet
-df.repartition(1).write.mode("overwrite").parquet(output_path)
-print(f"✅ Parquet written to: {output_path}")
+# ---------- Write (Silver Parquet; scalable: no single-file coercion) ----------
+df.write.mode("overwrite").parquet(output_path)
+print(f"✅ Silver Parquet written to: {output_path}")
 
 spark.stop()

@@ -1,4 +1,3 @@
-
 CREATE EXTERNAL TABLE IF NOT EXISTS hospital_readmissions.gen_info (
   `provider id` INT,
   `hospital name` STRING,
@@ -33,14 +32,36 @@ CREATE EXTERNAL TABLE IF NOT EXISTS hospital_readmissions.gen_info (
 STORED AS PARQUET
 LOCATION 's3://glue-hospital-data/athena/gen_info/';
 
-
-CREATE EXTERNAL TABLE hospital_readmissions.readmissions ( `Hospital Name` STRING,
-  `Provider ID` INT, `State` STRING, `Measure Name` STRING, 
-  `Number of Discharges` STRING, `Footnote` STRING, 
-  `Excess Readmission Ratio` STRING, `Predicted Readmission Rate` STRING, 
-  `Expected Readmission Rate` STRING, `Number of Readmissions` STRING, 
-  `Start Date` STRING, `End Date` STRING
+CREATE EXTERNAL TABLE IF NOT EXISTS hospital_readmissions.readmissions (
+  `Hospital Name` STRING,
+  `Provider ID` INT,
+  `State` STRING,
+  `Measure Name` STRING, 
+  `Number of Discharges` STRING,
+  `Footnote` STRING, 
+  `Excess Readmission Ratio` STRING,
+  `Predicted Readmission Rate` STRING, 
+  `Expected Readmission Rate` STRING,
+  `Number of Readmissions` STRING, 
+  `Start Date` STRING,
+  `End Date` STRING
 )
 STORED AS PARQUET
-LOCATION 's3://glue-hospital-data/athena/readmissions/'
+LOCATION 's3://glue-hospital-data/athena/readmissions/';
 
+-- GOLD (partitioned by state)
+CREATE EXTERNAL TABLE IF NOT EXISTS hospital_readmissions.gold_merged (
+  `provider_id` BIGINT,
+  `Readm Type` STRING,
+  `Discharges` STRING,
+  `Readmissions` STRING,
+  `Excess Readm Ratio` STRING,
+  `Pred Readm Rate` STRING,
+  `Exp Readm Rate` STRING,
+  `Hosp Ownership` STRING,
+  `Hosp Rating` STRING,
+  `R Rate Diff` DOUBLE
+)
+PARTITIONED BY (`state` STRING)
+STORED AS PARQUET
+LOCATION 's3://glue-hospital-data/athena/gold/merged/';
