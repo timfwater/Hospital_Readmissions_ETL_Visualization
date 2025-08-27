@@ -1,17 +1,21 @@
-# Hospital Readmissions ETL and Visualization
+# Hospital Readmissions ETL & Dashboard
 
-Here is a description of the seven files used:
+**Live app:** https://hospitalreadmissionsetlvisualization-ehd6voqwz3eiuuqefpq6mm.streamlit.app/
 
-Script_1_gen_info_json_to_csv.py: Converts source General Information file from JSON to CSV format
+## What this project shows
+- ECS/Fargate orchestrates
+- EMR (Spark) transforms raw CMS data → Silver (Parquet) → Gold (partitioned Parquet)
+- Athena/Glue provides SQL over S3
+- Streamlit dashboard visualizes a CSV snapshot (auto-updated)
 
-Script_2_merged_recreated_hosp.py: Converts source Readmissions Information file from Parquet to CSV format
+## Architecture
+1. Fargate runs `run_full_pipeline.py`
+2. Scripts sync to S3, EMR runs Spark steps (08/27/25)
+3. Gold written to `s3://glue-hospital-data/athena/gold/merged/` (partitioned by state)
+4. CSV snapshot to `s3://glue-hospital-data/final_merged_output/`
+5. Streamlit app reads the latest CSV
 
-Script_3_readm_parq_to_csv.py: Merges the two source files on "Provider ID", and engineers/cleans the data for BI Dashboard
-   
-Hospital_Readmissions_Executive_Dashboard.twbx: Provides an interactive BI Dashboard displaying KPIs across Hospital categories
-
-ETL Diagram.png: Provides a visual representation of the workflow
-
-General_Information_JSON.snappy: Source General Information dataset
-
-Readmissions_Information_Parquet.parquet: Source Readmissions Information dataset
+## Run the pipeline (one way)
+```bash
+./fargate_deployment/deploy_to_fargate.sh
+./run_fargate_task.sh
