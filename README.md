@@ -1,6 +1,5 @@
 # 🏥 **Hospital Readmissions — ETL & Visualization**
 
-Live dashboard: Streamlit App
 
 📌 **Overview**
 
@@ -52,7 +51,6 @@ Gold dataset is partitioned by state for query performance.
 
 CSV snapshot uses coalesce(1) for convenience; future scaling may use multi-file reads.
 
-athena_create_tables.sql
 ```
 📂 Repo Structure
 
