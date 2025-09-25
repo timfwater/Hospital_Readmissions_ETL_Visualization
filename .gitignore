@@ -56,3 +56,4 @@ build/
 # Ignore test files or local test outputs
 test_output/
 .venv/
+.venv/
