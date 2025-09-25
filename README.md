@@ -1,4 +1,4 @@
-#🏥 Hospital Readmissions — ETL & Visualization
+# 🏥 **Hospital Readmissions — ETL & Visualization**
 
 Live dashboard: Streamlit App
 
@@ -42,7 +42,7 @@ Star ratings: Hospitals with higher CMS Star Ratings tend to have fewer readmiss
 
 Ownership: Physician-run hospitals often outperform federal/proprietary hospitals, though effects vary.
 
-🛠️ Implementation Notes
+🛠️ **Implementation Notes**
 
 All scripts are EMR-friendly (S3A + AWS default credentials).
 
@@ -53,8 +53,8 @@ Gold dataset is partitioned by state for query performance.
 CSV snapshot uses coalesce(1) for convenience; future scaling may use multi-file reads.
 
 athena_create_tables.sql
-
-📂 ```Repo Structure
+```
+📂 Repo Structure
 
 ├── Dockerfile
 ├── Hospital_Readmissions_Executive_Dashboard.twbx   # Tableau dashboard (legacy)
@@ -80,5 +80,7 @@ athena_create_tables.sql
 └── streamlit/
     └── streamlit_app.py
 ```
-**Streamlit Dashboard:** https://hospitalreadmissionsetlvisualization-ehd6voqwz3eiuuqefpq6mm.streamlit.app/
-**Website:** https://wbst-bkt.s3.amazonaws.com/index_ETL.html
+**Streamlit Dashboard:** 
+https://hospitalreadmissionsetlvisualization-ehd6voqwz3eiuuqefpq6mm.streamlit.app/
+**Website:** 
+https://wbst-bkt.s3.amazonaws.com/index_ETL.html
