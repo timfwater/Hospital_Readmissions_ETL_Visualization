@@ -1,58 +1,109 @@
-# 🏥 **Hospital Readmissions — ETL & Visualization**
+# 🏥 Hospital Readmissions --- ETL & Visualization
 
+## 📌 Overview
 
-📌 **Overview**
+This project implements an end-to-end, AWS-based ETL and analytics
+pipeline for U.S. hospital readmissions data. It converts raw CMS source
+files into optimized Parquet datasets, registers schemas in AWS
+Glue/Athena, produces a curated **Gold dataset**, and publishes an
+analytics snapshot that powers a Streamlit dashboard.
 
-This project builds a full AWS-based ETL pipeline for analyzing U.S. hospital readmissions data.
-It converts raw CMS datasets into analytics-ready formats (Parquet), registers schemas in Glue/Athena for SQL queries, produces a curated Gold dataset, and publishes a CSV snapshot that powers a Streamlit dashboard.
+**End‑to‑end goal:** deliver a one‑page, executive‑level dashboard of
+U.S. hospital readmissions backed by a reproducible cloud pipeline.
 
-End-to-end goal: Deliver a one-page, high-level dashboard of U.S. hospital readmissions, backed by a robust, reproducible data pipeline.
+------------------------------------------------------------------------
 
-⚙️ **Architecture**
+## ⚙️ Architecture (High Level)
 
-Workflow at a glance:
+-   **Ingestion:** CMS General Hospital Information (JSON) and
+    Readmissions Reduction Program (CSV)
+-   **Transformation:** PySpark jobs write partitioned Parquet datasets
+    to S3 (**Silver layer**)
+-   **Cataloging:** AWS Glue crawlers / Athena DDL register external
+    tables
+-   **Gold Layer:** Merge and clean using Provider ID; publish
+    partitioned Gold dataset (by state)
+-   **Serving:** CSV snapshot powers Streamlit dashboard
+-   **Orchestration:** ECS Fargate runs `run_full_pipeline.py` for
+    one‑click execution
 
-Orchestration – ECS/Fargate runs run_full_pipeline.py
+------------------------------------------------------------------------
 
-📊 **Source Datasets**
+## 📊 Source Datasets
 
-General Hospital Info (JSON) – location, ownership, CMS star rating, etc.
+-   **General Hospital Information (JSON):** location, ownership,
+    ratings, metadata\
+-   **Readmissions Reduction Program (CSV):** measure‑specific
+    readmission metrics
 
-Readmissions Data (CSV) – category-specific readmission metrics.
+**Join key:** Provider ID
 
-Join Key: Provider ID.
+------------------------------------------------------------------------
 
-🚀 **Running the Pipeline**
+## 🚀 How to Run
 
-One-click Fargate deploy & run:
+### ✅ Option A --- One‑click Fargate deployment
 
-./fargate_deployment/deploy_to_fargate.sh
-./run_fargate_task.sh
+\`\`\`bash ./fargate_deployment/deploy_to_fargate.sh
+./run_fargate_task.sh \`\`\`
 
-Or run locally against AWS (requires config.env):
+### ✅ Option B --- Local execution against AWS
 
-python run_full_pipeline.py
+\`\`\`bash python run_full_pipeline.py \`\`\`
 
-📈 **Results (Highlights)**
+> Requires properly configured AWS credentials and `config.env`
 
-Regional variation: Lower excess readmissions in the North/Midwest; higher in parts of the South.
+------------------------------------------------------------------------
 
-Star ratings: Hospitals with higher CMS Star Ratings tend to have fewer readmissions.
+## 📈 Key Results & Insights
 
-Ownership: Physician-run hospitals often outperform federal/proprietary hospitals, though effects vary.
+-   Regional variation: lower excess readmissions in North/Midwest;
+    higher in parts of the South
+-   Higher CMS star ratings typically correlate with fewer readmissions
+-   Physician‑owned hospitals often outperform federal/proprietary
+    hospitals (varies by state)
 
-🛠️ **Implementation Notes**
+------------------------------------------------------------------------
 
-All scripts are EMR-friendly (S3A + AWS default credentials).
+## 🛠️ Engineering & Implementation Notes
 
-Silver → Parquet + Glue schemas = schema stability & efficient Athena scans.
+-   Scripts are **EMR‑compatible** (S3A filesystem + default credential
+    provider chain)
+-   Parquet + Glue schemas enable **efficient Athena scans**
+-   Gold dataset is **partitioned by state** for query performance and
+    cost reduction
+-   CSV snapshot temporarily uses `coalesce(1)` for convenience
 
-Gold dataset is partitioned by state for query performance.
+------------------------------------------------------------------------
 
-CSV snapshot uses coalesce(1) for convenience; future scaling may use multi-file reads.
+## 🔍 Validation & Data Quality
 
-```
-📂 Repo Structure
+-   Row‑count validation after each stage (Raw → Silver → Gold)
+-   Schema checks for required columns and Provider ID integrity
+-   Null‑rate checks on key measures
+-   State‑level sanity‑check aggregates
+
+------------------------------------------------------------------------
+
+## 🔐 Security & Cost Considerations
+
+-   Least‑privilege IAM policies for ECS task role and S3 access
+-   Parquet + partition pruning minimize Athena scan cost
+-   Auto‑terminating compute patterns recommended for EMR/Spark
+    workloads
+
+------------------------------------------------------------------------
+
+## 🧭 Troubleshooting Tips
+
+-   **Zero rows in Athena?** Ensure crawler/DDL ran after Parquet writes
+-   **ECS task can't pull images?** Enable public IP or ensure NAT
+    access
+-   **Streamlit errors on missing columns?** Refresh Gold snapshot
+
+------------------------------------------------------------------------
+
+## 📂 Repository Structure
 
 ├── Dockerfile
 ├── Hospital_Readmissions_Executive_Dashboard.twbx   # Tableau dashboard (legacy)
@@ -77,8 +128,11 @@ CSV snapshot uses coalesce(1) for convenience; future scaling may use multi-file
 │   └── 03_merge_from_database.py
 └── streamlit/
     └── streamlit_app.py
-```
-**Streamlit Dashboard:** 
-https://hospitalreadmissionsetlvisualization-ehd6voqwz3eiuuqefpq6mm.streamlit.app/
-**Website:** 
-https://wbst-bkt.s3.amazonaws.com/index_ETL.html
+
+------------------------------------------------------------------------
+
+## 🌐 Live Resources
+
+-   **Streamlit Dashboard:**
+    hospitalreadmissionsetlvisualization-ehd6voqwz3eiuuqefpq6mm.streamlit.app
+-   **Project Website:** wbst-bkt.s3.amazonaws.com/index_ETL.html
